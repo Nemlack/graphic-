@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City Climate Data</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+    <style>
+        canvas {
+            width: 95% !important;
+            height: 95% !important;
+        }
+        #my_data {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        #my_data td, #my_data th {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        .Parent {
+            display: flex;
+            flex-direction: row;
+        }
+        .child1 {
+            width: 70%;
+            height: 100vh;
+        }
+        .child2 {
+            width: 30%;
+            height: 100vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+<div class="Parent">
+    <div class="child1">
+        <center>
+            <canvas id="line-chart"></canvas>
+        </center>
+    </div>
+
+    <div class="child2">
+        <center>
+            <h3>City Climate Data</h3>
+            <table id="my_data" cellpadding="7"></table>
+        </center>
+    </div>
+</div>
+
+<script>
+    getData();
+
+    async function getData() {
+        const response = await fetch('https://raw.githubusercontent.com/RFUNN/JSON_Data/main/climate.json');
+        if (!response.ok) {
+            console.error('Error loading data');
+            return;
+        }
+
+        const data = await response.json();
+        console.log(data);
+
+        // Город, для которого строим график (id = 1)
+        const cityData = data.find(city => city.id === 1);
+
+        if (!cityData) {
+            console.error('City data not found');
+            return;
+        }
+
+        const labels = [];
+        const highTemperatures = [];
+        const lowTemperatures = [];
+
+        // Извлекаем данные для каждого месяца
+        cityData.monthlyAvg.forEach(month => {
+            labels.push(`Month ${cityData.monthlyAvg.indexOf(month) + 1}`);
+            highTemperatures.push(month.high);
+            lowTemperatures.push(month.low);
+        });
+
+        // Построение графика (с типом 'line' для линии)
+        new Chart(document.getElementById("line-chart"), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'High Temperature (°C)',
+                        borderColor: 'rgba(255, 0, 0, 1)',  // Красный цвет
+                        backgroundColor: 'rgba(255, 0, 0, 0.2)',
+                        fill: false,
+                        borderWidth: 2,
+                        data: highTemperatures
+                    },
+                    {
+                        label: 'Low Temperature (°C)',
+                        borderColor: 'rgba(0, 0, 255, 1)',  // Синий цвет
+                        backgroundColor: 'rgba(0, 0, 255, 0.2)',
+                        fill: false,
+                        borderWidth: 2,
+                        data: lowTemperatures
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                title: {
+                    display: true,
+                    text: `Climate Data for ${cityData.city}, ${cityData.country}`
+                },
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
+                }
+            }
+        });
+
+        // Отображение данных в таблице
+        let tableContent = `<tr><th>Month</th><th>High Temp (°C)</th><th>Low Temp (°C)</th></tr>`;
+        cityData.monthlyAvg.forEach(month => {
+            tableContent += `
+                <tr>
+                    <td>Month ${cityData.monthlyAvg.indexOf(month) + 1}</td>
+                    <td>${month.high}</td>
+                    <td>${month.low}</td>
+                </tr>
+            `;
+        });
+        document.getElementById("my_data").innerHTML = tableContent;
+    }
+</script>
+</body>
+</html>
